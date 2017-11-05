@@ -8,7 +8,7 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    <packaging>pom</packaging>
+    <packaging>jar</packaging>
     <artifactId>dubbo-api</artifactId>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -36,5 +36,15 @@
             </plugin>
         </plugins>
     </build>
+    <distributionManagement>
+        <repository>
+            <id>releases</id>
+            <url>D:\studySoft\DevelopeTools\maven\repority</url>
+        </repository>
+        <snapshotRepository>
+            <id>snapshots</id>
+            <url>D:\studySoft\DevelopeTools\maven\repority</url>
+        </snapshotRepository>
+    </distributionManagement>
 
 </project>
