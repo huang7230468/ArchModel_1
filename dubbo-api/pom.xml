@@ -39,11 +39,13 @@
     <distributionManagement>
         <repository>
             <id>releases</id>
-            <url>D:\studySoft\DevelopeTools\maven\repority</url>
+            <!--<url>D:\studySoft\DevelopeTools\maven\repority</url>-->
+            <url>/root/.m2/repository</url>
         </repository>
         <snapshotRepository>
             <id>snapshots</id>
-            <url>D:\studySoft\DevelopeTools\maven\repority</url>
+           <!-- <url>D:\studySoft\DevelopeTools\maven\repority</url>-->
+            <url>/root/.m2/repository</url>
         </snapshotRepository>
     </distributionManagement>
 
