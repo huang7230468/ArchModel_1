@@ -7,6 +7,8 @@
     http://code.alibabatech.com/schema/dubbo
     http://code.alibabatech.com/schema/dubbo/dubbo.xsd">
 
+    <context:property-placeholder location="classpath*:*.properties"/>
+
     <!-- 提供方应用信息，用于计算依赖关系 -->
     <dubbo:application name="service_provider" />
 
@@ -16,7 +18,11 @@
     <!-- 用dubbo协议在28080端口暴露服务 -->
     <dubbo:protocol name="dubbo" port="28080" />
 
-    <dubbo:service interface="ant.dubbo.api.UserService" ref="userService" />
+    <dubbo:service interface="ant.dubbo.api.UserService" ref="userService" cluster="Failfast"
+    retries="2" timeout="100" protocol="dubbo" loadbalance="random">
+        <!--可显式的定义接口中方法超时间等，若未定义继承使用dubbo:service配置的属性值。-->
+        <!-- <dubbo:method name="getName" timeout="80" retries="2" />-->
+    </dubbo:service>
     <bean id="userService" class="ant.dubbo.service.impl.UserServiceImpl" />
 
 </beans>
