@@ -13,7 +13,7 @@
         <module>dubbo-service</module>
         <module>dubbo-web</module>
         <module>dubbo-define</module>
-        <module>schedule</module>
+        <module>dubbo-schedule</module>
     </modules>
 
     <dependencies>
