@@ -4,13 +4,14 @@ import com.alibaba.dubbo.config.annotation.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
 
 
 /**
  * @author
  * @create 2018-01-03 22:47
  **/
-@Service
+@Component
 public class taskDemo {
     Logger log = LoggerFactory.getLogger(this.getClass());
     @Scheduled(cron = "0/10 * * * * ?")

@@ -2,11 +2,13 @@ package com.ant.schedule.service.impl;
 
 import ant.dubbo.api.taskTimer.ITaskService;
 import ant.dubbo.dto.ResultMsg;
+import com.alibaba.dubbo.common.utils.StringUtils;
 import com.ant.schedule.entity.Task;
 import com.ant.schedule.proxy.TriggerProxy;
 import com.ant.schedule.selfannotation.Comment;
 import org.quartz.*;
 import org.quartz.impl.JobDetailImpl;
+import org.quartz.impl.calendar.AnnualCalendar;
 import org.quartz.impl.triggers.CronTriggerImpl;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,11 +16,14 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
+import org.springframework.stereotype.Component;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.text.ParseException;
 import java.util.*;
+import java.util.Calendar;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -28,6 +33,7 @@ import java.util.regex.Pattern;
  * @author
  * @create 2018-01-01 22:03
  **/
+@Component
 public class TaskService implements ITaskService, ApplicationContextAware {
     private ApplicationContext applicationContext;
     @Autowired
@@ -38,16 +44,36 @@ public class TaskService implements ITaskService, ApplicationContextAware {
     private List<Method> triggerList = new ArrayList<Method>();
     //保存所有任务列表
     private Map<String, Task> allTask = new LinkedHashMap<String, Task>();
-
-    Map<String, Class<?>> classTypes = new LinkedHashMap<String, Class<?>>();
-
-    String regex = "";
+    private final  static  String regex = "(.+)\\((.*)\\)";
 
     private Scheduler scheduler;
     Random random = new Random();
+    private static  Map<String, Class<?>> classTypes = new HashMap<String, Class<?>>(){
+        {
+            put("boolean",boolean.class);
+            put("byte",byte.class);
+            put("short",short.class);
+            put("int",int.class);
+            put("long",long.class);
+            put("float",float.class);
+            put("double",double.class);
+            put("char",char.class);
+            put("java.lang.Boolean",Boolean.class);
+            put("java.lang.Byte",Byte.class);
+            put("java.lang.Short",Short.class);
+            put("java.lang.Integer",Integer.class);
+            put("java.lang.Long",Long.class);
+            put("java.lang.Float",Float.class);
+            put("java.lang.Double",Double.class);
+            put("java.lang.Character",Character.class);
+        }
+    };
+
+
+
 
     private ResultMsg<?> addTolist(Task task, Object o) throws ClassNotFoundException, IllegalAccessException,
-            InstantiationException, NoSuchMethodException, SchedulerException {
+            InstantiationException, NoSuchMethodException, SchedulerException, ParseException {
         if (task.getGroup() == null || task.getGroup().trim().length() == 0) {
             return null;
         }
@@ -62,7 +88,7 @@ public class TaskService implements ITaskService, ApplicationContextAware {
         if (target == null) {
             target = cls.newInstance();
         }
-        String triggerName = task.getTrigger().replaceAll(task.getGroup() + ",", "");
+        String triggerName = task.getTrigger().replaceAll(task.getGroup() + ".", "");
         String methodName = triggerName;
         List<Class<?>> classList = new ArrayList<Class<?>>();
         Pattern p = Pattern.compile(regex);
@@ -83,15 +109,25 @@ public class TaskService implements ITaskService, ApplicationContextAware {
             }
         }
         Class<?>[] param = new Class<?>[classList.size()];
-        Method method = cls.getMethod(methodName, classList.toArray(param));
         String taskId = task.getId();
-        Object[] proxyParam = null;
+        //方法参数
+        //若任务的方法有入参时，则必须重新实现下这个地方，包括如何接收前台传的入参
+        Object[] proxyParam = null ;
+      /*  Calendar calendar = GregorianCalendar.getInstance() ;
+        AnnualCalendar annualCalendar = new AnnualCalendar() ;
+        annualCalendar.setDayExcluded(calendar,true);
+        scheduler.addCalendar("now",annualCalendar,true,true);*/
+
         JobDetailImpl jobDetail = new JobDetailImpl(taskId, task.getGroup(), TriggerProxy.class);
-        CronTriggerImpl cronTrigger = new CronTriggerImpl(taskId, task.getTrigger());
+        CronTriggerImpl cronTrigger = new CronTriggerImpl(taskId, task.getTrigger(),task.getCron());
         cronTrigger.getJobDataMap().put(TriggerProxy.DATA_TARGET_KEY, target);
-        cronTrigger.getJobDataMap().put(TriggerProxy.DATA_TRIGGER_KEY, method);
-        cronTrigger.getJobDataMap().put(TriggerProxy.DATA_TASK_KEY, taskId);
+        cronTrigger.getJobDataMap().put(TriggerProxy.DATA_TRIGGER_KEY, methodName);
+        cronTrigger.getJobDataMap().put(TriggerProxy.DATA_TASK_KEY, task);
+        cronTrigger.getJobDataMap().put(TriggerProxy.DATA_GROUP_NAME, task.getGroup());
         cronTrigger.getJobDataMap().put(TriggerProxy.DATA_TRIGGER_PARAMS_KEY, proxyParam);
+        cronTrigger.getJobDataMap().put(TriggerProxy.DATA_TRIGGER_PARAMS_CLASSTYPE, param);
+        //cronTrigger.setCalendarName("now");
+
         scheduler.scheduleJob(jobDetail, cronTrigger);
         if (!scheduler.isShutdown()) {
             scheduler.start();
@@ -126,7 +162,9 @@ public class TaskService implements ITaskService, ApplicationContextAware {
 
         try {
             Class<?> cls = Class.forName(taskClassName);
-            Method method = cls.getMethod(triggerName);
+            //todo
+            //这个地方如果任务有参数则需要定义getMethod入参
+            Method method = cls.getMethod(triggerName,String.class);
             Task task = createTask(method, null);
             task.setName(taskName);
             if (taskGroupName != null) {
@@ -164,7 +202,7 @@ public class TaskService implements ITaskService, ApplicationContextAware {
         for (Class<?> parameter : method.getParameterTypes()) {
             params.add(parameter.getName());
         }
-        task.setTrigger(cls.getName() + "." + method.getName() + (params.size() == 0 ? "()" : "()"));
+        task.setTrigger(cls.getName() + "." + method.getName() + (params.size() == 0 ? "()" : ("("+StringUtils.join(params,",")+")")));
         if (!"".equals(cron)) {
             task.setCron(cron);
             task.setCronDesc("无");
@@ -187,6 +225,7 @@ public class TaskService implements ITaskService, ApplicationContextAware {
     }
 
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        System.out.println("启动监控任务");
         this.applicationContext = applicationContext;
         scheduler = schedulerFactoryBean.getScheduler();
 

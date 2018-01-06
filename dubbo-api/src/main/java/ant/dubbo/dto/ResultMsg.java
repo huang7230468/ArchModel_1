@@ -46,4 +46,13 @@ public class ResultMsg<T> {
     public void setError(String error) {
         this.error = error;
     }
+
+    @Override
+    public String toString() {
+        return "ResultMsg{" +
+                "success=" + success +
+                ", data=" + data +
+                ", error='" + error + '\'' +
+                '}';
+    }
 }
