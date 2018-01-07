@@ -164,8 +164,8 @@ public class TaskService implements ITaskService, ApplicationContextAware {
             Class<?> cls = Class.forName(taskClassName);
             //todo
             //这个地方如果任务有参数则需要定义getMethod入参
-            Method method = cls.getMethod(triggerName,String.class);
-            Task task = createTask(method, null);
+            Method method = cls.getMethod(triggerName);
+            Task task = createTask(method, cron);
             task.setName(taskName);
             if (taskGroupName != null) {
                 task.setGroup(taskGroupName);
