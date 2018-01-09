@@ -36,8 +36,7 @@ public class TriggerProxy implements Job {
         Object[]  params = (Object[]) data.get(DATA_TRIGGER_PARAMS_KEY);
         Task task = (Task) data.get(DATA_TASK_KEY) ;
         task.setExecute(task.getExecute() + 1);
-        //local.get().start = System.currentTimeMillis() ;
-        long start = System.currentTimeMillis() ;
+        local.get().start = System.currentTimeMillis() ;
         try {
             Class<?> cls = Class.forName(groupName);
             Method method = cls.getMethod(methodName, paramsClassType);
@@ -45,9 +44,9 @@ public class TriggerProxy implements Job {
              * 类名 + 入参
              */
             method.invoke(target,params) ;
-            long end = System.currentTimeMillis() ;
-            task.setLastExecTime(start);
-            task.setLastFinishTime(end);
+            local.get().end = System.currentTimeMillis() ;
+            task.setLastExecTime( local.get().start);
+            task.setLastFinishTime( local.get().end);
         } catch (IllegalAccessException e) {
             e.printStackTrace();
         } catch (InvocationTargetException e) {
