@@ -12,7 +12,10 @@
     zookeeper配置 ：dubbo-service 下的 Resources下 dubbo_provider.xml<br />
                     dubbo-web 下的 Resources下 dubbo_config.xml<br />
 4、到此，项目基本配置好，可以放进tomcat中，启动<br />
-5、访问 http://loaclhost:8080/dubbo-web/index?name=1 <br />                  
+5、访问 http://loaclhost:8080/dubbo-web/index?name=1 <br />       
+6、新增dubbo-schedule模块，quartz任务自动化
+
+           
                 
                     
           
