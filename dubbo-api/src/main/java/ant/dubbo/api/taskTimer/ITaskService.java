@@ -11,6 +11,7 @@ public interface ITaskService {
     /**
      * 返回所有任务
      * @return
+     *
      */
     public ResultMsg<?> queryAllTask();
     /**
