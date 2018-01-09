@@ -2,10 +2,13 @@ package com.ant.schedule.service.impl;
 
 import ant.dubbo.api.taskTimer.ITaskService;
 import ant.dubbo.dto.ResultMsg;
+import com.alibaba.dubbo.common.json.JSONArray;
+import com.alibaba.dubbo.common.json.JSONObject;
 import com.alibaba.dubbo.common.utils.StringUtils;
 import com.ant.schedule.entity.Task;
 import com.ant.schedule.proxy.TriggerProxy;
 import com.ant.schedule.selfannotation.Comment;
+import org.apache.commons.collections.ListUtils;
 import org.quartz.*;
 import org.quartz.impl.JobDetailImpl;
 import org.quartz.impl.calendar.AnnualCalendar;
@@ -30,7 +33,7 @@ import java.util.regex.Pattern;
 /**
  * 任务方法类
  *
- * @author
+ * @author hh
  * @create 2018-01-01 22:03
  **/
 @Component
@@ -69,73 +72,17 @@ public class TaskService implements ITaskService, ApplicationContextAware {
         }
     };
 
-
-
-
-    private ResultMsg<?> addTolist(Task task, Object o) throws ClassNotFoundException, IllegalAccessException,
-            InstantiationException, NoSuchMethodException, SchedulerException, ParseException {
-        if (task.getGroup() == null || task.getGroup().trim().length() == 0) {
-            return null;
+    /**
+     * 返回所有任务
+     * @return
+     */
+    @Override
+    public ResultMsg<?> queryAllTask() {
+        List<Task> taskList = new ArrayList<Task>() ;
+        for(Map.Entry<String ,Task> entry :  allTask.entrySet())   {
+            taskList.add(entry.getValue());
         }
-        Class<?> cls = Class.forName(task.getGroup());
-
-        Object target = null;
-        try {
-            target = applicationContext.getBean(cls);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        if (target == null) {
-            target = cls.newInstance();
-        }
-        String triggerName = task.getTrigger().replaceAll(task.getGroup() + ".", "");
-        String methodName = triggerName;
-        List<Class<?>> classList = new ArrayList<Class<?>>();
-        Pattern p = Pattern.compile(regex);
-        Matcher m = p.matcher(triggerName);
-        while (m.find()) {
-            methodName = m.group(1);
-            String paramStr = m.group(2);
-            String[] paramNames = paramStr.split("\\,");
-            for (String str : paramNames) {
-                if ("".equals(str)) {
-                    continue;
-                }
-                if (classTypes.containsKey(str)) {
-                    classList.add(classTypes.get(str));
-                } else {
-                    classList.add(Class.forName(str));
-                }
-            }
-        }
-        Class<?>[] param = new Class<?>[classList.size()];
-        String taskId = task.getId();
-        //方法参数
-        //若任务的方法有入参时，则必须重新实现下这个地方，包括如何接收前台传的入参
-        Object[] proxyParam = null ;
-      /*  Calendar calendar = GregorianCalendar.getInstance() ;
-        AnnualCalendar annualCalendar = new AnnualCalendar() ;
-        annualCalendar.setDayExcluded(calendar,true);
-        scheduler.addCalendar("now",annualCalendar,true,true);*/
-
-        JobDetailImpl jobDetail = new JobDetailImpl(taskId, task.getGroup(), TriggerProxy.class);
-        CronTriggerImpl cronTrigger = new CronTriggerImpl(taskId, task.getTrigger(),task.getCron());
-        cronTrigger.getJobDataMap().put(TriggerProxy.DATA_TARGET_KEY, target);
-        cronTrigger.getJobDataMap().put(TriggerProxy.DATA_TRIGGER_KEY, methodName);
-        cronTrigger.getJobDataMap().put(TriggerProxy.DATA_TASK_KEY, task);
-        cronTrigger.getJobDataMap().put(TriggerProxy.DATA_GROUP_NAME, task.getGroup());
-        cronTrigger.getJobDataMap().put(TriggerProxy.DATA_TRIGGER_PARAMS_KEY, proxyParam);
-        cronTrigger.getJobDataMap().put(TriggerProxy.DATA_TRIGGER_PARAMS_CLASSTYPE, param);
-        //cronTrigger.setCalendarName("now");
-
-        scheduler.scheduleJob(jobDetail, cronTrigger);
-        if (!scheduler.isShutdown()) {
-            scheduler.start();
-        }
-        if (!allTask.containsKey(taskId)) {
-            this.allTask.put(taskId, task);
-        }
-        return new ResultMsg<Object>(Boolean.TRUE, taskId);
+        return new ResultMsg<Object>(true,taskList);
     }
 
     /**
@@ -147,6 +94,67 @@ public class TaskService implements ITaskService, ApplicationContextAware {
      */
     public ResultMsg<?> createTask(String taskName, String taskClassName, String tiggerName, String cron) {
         return createTask(taskName, null, taskClassName, null, tiggerName, cron);
+    }
+
+    /**
+     * 修改的逻辑 ： 先删除 ，再创建
+     * @param taskId 任务id
+     * @param cron   cron表达式
+     * @return
+     */
+    @Override
+    public ResultMsg<?> modifyTask(String taskId, String cron) {
+        Task task = allTask.get(taskId) ;
+        try {
+            TriggerKey triggerKey = new TriggerKey(taskId);
+            Scheduler scheduler = schedulerFactoryBean.getScheduler() ;
+            CronTrigger cronTrigger =  (CronTrigger) scheduler.getTrigger(triggerKey) ;
+            if( cronTrigger == null ){
+                return new ResultMsg<Object>(false,"修改失败");
+            }
+            String cronExpression =  cronTrigger.getCronExpression() ;
+            if(!cron.equalsIgnoreCase(cronExpression)){
+                ResultMsg<Object> resultMsg =  (ResultMsg<Object>)removeTask(taskId);
+                if(resultMsg.isSuccess()){
+                    task.setCron(cron);
+                    task.setId((System.currentTimeMillis()+random.nextInt())+"");
+                    addTolist(task,null);
+                }else{
+                    return resultMsg ;
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException() ;
+        }
+        return new ResultMsg<Object>(true,task);
+    }
+
+    /**
+     * 移除任务逻辑 ： 先暂停任务、再移除触发器、最后删除任务
+     * @param taskId 任务id
+     * @return
+     */
+    public ResultMsg<?> removeTask(String taskId){
+        Task task = allTask.get(taskId) ;
+        Scheduler scheduler = schedulerFactoryBean.getScheduler();
+        JobKey jobKey = new JobKey(taskId,task.getGroup());
+        try {
+            //暂停任务
+            scheduler.pauseJob(jobKey);
+            //移除触发器
+            TriggerKey triggerKey = new TriggerKey(taskId) ;
+            scheduler.unscheduleJob(triggerKey);
+            //删除任务
+            boolean isSuccess =  scheduler.deleteJob(jobKey) ;
+            if(isSuccess) {
+                task.setState(2);
+                allTask.remove(taskId);
+                return new ResultMsg<Object>(true, "删除成功");
+            }
+        } catch (SchedulerException e) {
+            e.printStackTrace();
+        }
+        return new ResultMsg<Object>(false,"删除失败");
     }
 
     /**
@@ -223,6 +231,85 @@ public class TaskService implements ITaskService, ApplicationContextAware {
         }
         return task;
     }
+
+    /**
+     * 将任务加到scheduler进行调度管理
+     * @param task
+     * @param o
+     * @return
+     * @throws ClassNotFoundException
+     * @throws IllegalAccessException
+     * @throws InstantiationException
+     * @throws NoSuchMethodException
+     * @throws SchedulerException
+     * @throws ParseException
+     */
+    private ResultMsg<?> addTolist(Task task, Object o) throws ClassNotFoundException, IllegalAccessException,
+            InstantiationException, NoSuchMethodException, SchedulerException, ParseException {
+        if (task.getGroup() == null || task.getGroup().trim().length() == 0) {
+            return null;
+        }
+        Class<?> cls = Class.forName(task.getGroup());
+
+        Object target = null;
+        try {
+            target = applicationContext.getBean(cls);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        if (target == null) {
+            target = cls.newInstance();
+        }
+        String triggerName = task.getTrigger().replaceAll(task.getGroup() + ".", "");
+        String methodName = triggerName;
+        List<Class<?>> classList = new ArrayList<Class<?>>();
+        Pattern p = Pattern.compile(regex);
+        Matcher m = p.matcher(triggerName);
+        while (m.find()) {
+            methodName = m.group(1);
+            String paramStr = m.group(2);
+            String[] paramNames = paramStr.split("\\,");
+            for (String str : paramNames) {
+                if ("".equals(str)) {
+                    continue;
+                }
+                if (classTypes.containsKey(str)) {
+                    classList.add(classTypes.get(str));
+                } else {
+                    classList.add(Class.forName(str));
+                }
+            }
+        }
+        Class<?>[] param = new Class<?>[classList.size()];
+        String taskId = task.getId();
+        //方法参数
+        //若任务的方法有入参时，则必须重新实现下这个地方，包括如何接收前台传的入参
+        Object[] proxyParam = null ;
+      /*  Calendar calendar = GregorianCalendar.getInstance() ;
+        AnnualCalendar annualCalendar = new AnnualCalendar() ;
+        annualCalendar.setDayExcluded(calendar,true);
+        scheduler.addCalendar("now",annualCalendar,true,true);*/
+
+        JobDetailImpl jobDetail = new JobDetailImpl(taskId, task.getGroup(), TriggerProxy.class);
+        CronTriggerImpl cronTrigger = new CronTriggerImpl(taskId, task.getTrigger(),task.getCron());
+        cronTrigger.getJobDataMap().put(TriggerProxy.DATA_TARGET_KEY, target);
+        cronTrigger.getJobDataMap().put(TriggerProxy.DATA_TRIGGER_KEY, methodName);
+        cronTrigger.getJobDataMap().put(TriggerProxy.DATA_TASK_KEY, task);
+        cronTrigger.getJobDataMap().put(TriggerProxy.DATA_GROUP_NAME, task.getGroup());
+        cronTrigger.getJobDataMap().put(TriggerProxy.DATA_TRIGGER_PARAMS_KEY, proxyParam);
+        cronTrigger.getJobDataMap().put(TriggerProxy.DATA_TRIGGER_PARAMS_CLASSTYPE, param);
+        //cronTrigger.setCalendarName("now");
+
+        scheduler.scheduleJob(jobDetail, cronTrigger);
+        if (!scheduler.isShutdown()) {
+            scheduler.start();
+        }
+        if (!allTask.containsKey(taskId)) {
+            this.allTask.put(taskId, task);
+        }
+        return new ResultMsg<Object>(Boolean.TRUE, taskId);
+    }
+
 
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         System.out.println("启动监控任务");
