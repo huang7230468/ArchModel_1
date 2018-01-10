@@ -232,6 +232,7 @@ public class TaskService implements ITaskService, ApplicationContextAware {
             task.setDesc(groupDesc);
         }
 
+
         return task;
     }
 
