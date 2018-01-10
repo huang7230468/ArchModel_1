@@ -30,6 +30,8 @@ import java.util.Calendar;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.quartz.TriggerBuilder.newTrigger;
+
 /**
  * 任务方法类
  *
