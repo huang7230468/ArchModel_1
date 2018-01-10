@@ -231,6 +231,7 @@ public class TaskService implements ITaskService, ApplicationContextAware {
             String groupDesc = taskM.invoke(comment, null).toString();
             task.setDesc(groupDesc);
         }
+
         return task;
     }
 
