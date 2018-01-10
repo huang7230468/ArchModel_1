@@ -2,16 +2,12 @@ package com.ant.schedule.service.impl;
 
 import ant.dubbo.api.taskTimer.ITaskService;
 import ant.dubbo.dto.ResultMsg;
-import com.alibaba.dubbo.common.json.JSONArray;
-import com.alibaba.dubbo.common.json.JSONObject;
 import com.alibaba.dubbo.common.utils.StringUtils;
-import com.ant.schedule.entity.Task;
+import ant.dubbo.entity.Task;
 import com.ant.schedule.proxy.TriggerProxy;
 import com.ant.schedule.selfannotation.Comment;
-import org.apache.commons.collections.ListUtils;
 import org.quartz.*;
 import org.quartz.impl.JobDetailImpl;
-import org.quartz.impl.calendar.AnnualCalendar;
 import org.quartz.impl.triggers.CronTriggerImpl;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,11 +22,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.text.ParseException;
 import java.util.*;
-import java.util.Calendar;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static org.quartz.TriggerBuilder.newTrigger;
 
 /**
  * 任务方法类

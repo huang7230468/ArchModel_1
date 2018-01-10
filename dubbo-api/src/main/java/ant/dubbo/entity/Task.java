@@ -1,4 +1,6 @@
-package com.ant.schedule.entity;
+package ant.dubbo.entity;
+
+import java.io.Serializable;
 
 /**
  * 任务实体类
@@ -6,7 +8,7 @@ package com.ant.schedule.entity;
  * @author
  * @create 2018-01-01 21:44
  **/
-public class Task {
+public class Task implements Serializable{
 
     private String id ;                 //任务ID,
     private String parentid ;           //父级任务ID

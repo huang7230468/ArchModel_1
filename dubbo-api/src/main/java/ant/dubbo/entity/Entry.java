@@ -1,4 +1,4 @@
-package com.ant.schedule.entity;
+package ant.dubbo.entity;
 
 public class Entry {
       public long start ;

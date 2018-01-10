@@ -1,10 +1,12 @@
 package ant.dubbo.dto;
 
+import java.io.Serializable;
+
 /**
  * @author
  * @create 2018-01-03 22:35
  **/
-public class ResultMsg<T> {
+public class ResultMsg<T> implements Serializable{
 
     private boolean success;
 

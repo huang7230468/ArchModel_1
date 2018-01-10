@@ -1,8 +1,7 @@
 package com.ant.schedule.proxy;
 
-import com.ant.schedule.entity.Entry;
-import com.ant.schedule.entity.Task;
-import com.sun.corba.se.impl.encoding.OSFCodeSetRegistry;
+import ant.dubbo.entity.Entry;
+import ant.dubbo.entity.Task;
 import org.quartz.Job;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
