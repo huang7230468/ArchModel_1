@@ -4,9 +4,7 @@ import ant.dubbo.api.taskTimer.ITaskService;
 import ant.dubbo.dto.ResultMsg;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 
 import java.io.IOException;
@@ -35,4 +33,26 @@ public class TaskController {
     public ResultMsg getALlTask() throws IOException {
         return  taskService.queryAllTask() ;
     }
+
+    /**
+     * @RequestParam 表示入参
+     * @PathVariable 表示路径中的入参
+     * consumes ： 默认接受application/Json 类型 ，这个需要注意
+     * @return
+     */
+    @RequestMapping(value = "/new/task" ,method = RequestMethod.POST ,consumes = "application/x-www-form-urlencoded")
+    @ResponseBody
+    public ResultMsg createTask(@RequestParam(value = "taskName") String taskName,
+                                @RequestParam(value = "taskClasName") String taskClasName,
+                                @RequestParam(value = "tiggerName") String tiggerName ,
+                                @RequestParam(value = "cron") String cron ){
+        return taskService.createTask(taskName,taskClasName,tiggerName,cron);
+    }
+
+    @RequestMapping(value = "/{taskId}/remove")
+    @ResponseBody
+    public ResultMsg deleteTask(@PathVariable("taskId") String taskId){
+        return taskService.removeTask(taskId);
+    }
+
 }
