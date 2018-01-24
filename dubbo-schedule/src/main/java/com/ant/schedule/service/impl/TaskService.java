@@ -6,6 +6,7 @@ import com.alibaba.dubbo.common.utils.StringUtils;
 import ant.dubbo.entity.Task;
 import com.ant.schedule.proxy.TriggerProxy;
 import com.ant.schedule.selfannotation.Comment;
+import com.ant.schedule.selfannotation.TaskName;
 import org.quartz.*;
 import org.quartz.impl.JobDetailImpl;
 import org.quartz.impl.triggers.CronTriggerImpl;
@@ -218,11 +219,19 @@ public class TaskService implements ITaskService, ApplicationContextAware {
             task.setCron(crons);
             task.setCronDesc(cronDesc.get(crons));
         }
+        //获取任务明细
         if (method.isAnnotationPresent(Comment.class)) {
-            Annotation comment = cls.getAnnotation(Comment.class);
+            Annotation comment = method.getAnnotation(Comment.class);
             Method taskM = comment.getClass().getMethod("value", null);
             String groupDesc = taskM.invoke(comment, null).toString();
             task.setDesc(groupDesc);
+        }
+        //获取任务名称
+        if (method.isAnnotationPresent(TaskName.class)) {
+            Annotation taskName = method.getAnnotation(TaskName.class);
+            Method taskM = taskName.getClass().getMethod("value", null);
+            String name = taskM.invoke(taskName, null).toString();
+            task.setName(name);
         }
 
 
