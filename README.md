@@ -14,6 +14,10 @@
 4、到此，项目基本配置好，可以放进tomcat中，启动<br />
 5、访问 http://loaclhost:8080/dubbo-web/index?name=1 <br />       
 6、新增dubbo-schedule模块，quartz任务自动化，不断完善
+## 知识点
+ - SpringMvc 中入参注解 @RequestParam是为了解决 consumes = "application/x-www-form-urlencoded"的情况，客户端发起请求必须是这种content-type
+    其次 入参注解 @RequestBody是为了解决content-type为"application/json" 这种客户端请求
+
 
            
                 

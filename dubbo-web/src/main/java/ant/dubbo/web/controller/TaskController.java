@@ -2,12 +2,17 @@ package ant.dubbo.web.controller;
 
 import ant.dubbo.api.taskTimer.ITaskService;
 import ant.dubbo.dto.ResultMsg;
+import ant.dubbo.entity.Task;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 
+import javax.validation.Valid;
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * @author
@@ -40,13 +45,30 @@ public class TaskController {
      * consumes ： 默认接受application/Json 类型 ，这个需要注意
      * @return
      */
-    @RequestMapping(value = "/new/task" ,method = RequestMethod.POST ,consumes = "application/x-www-form-urlencoded")
+    @RequestMapping(value = "/new1" ,method = RequestMethod.POST ,consumes = "application/x-www-form-urlencoded")
     @ResponseBody
-    public ResultMsg createTask(@RequestParam(value = "taskName") String taskName,
-                                @RequestParam(value = "taskClasName") String taskClasName,
-                                @RequestParam(value = "tiggerName") String tiggerName ,
+    public ResultMsg createTask(@RequestParam(value = "name") String taskName,
+                                @RequestParam(value = "group") String group,
+                                @RequestParam(value = "trigger") String trigger ,
+                                @RequestParam(value = "planExeTimes") String planExeTimes ,
                                 @RequestParam(value = "cron") String cron ){
-        return taskService.createTask(taskName,taskClasName,tiggerName,cron);
+        return taskService.createTask(taskName,group,trigger,cron);
+    }
+
+    @RequestMapping(value = "/new" ,method = RequestMethod.POST )
+    @ResponseBody
+    public ResultMsg createTask(@Valid @RequestBody Task task ,BindingResult result){
+        if(result.hasErrors()){
+            System.out.println("错误"+result.getFieldError().toString());
+        }
+        return taskService.createTask(task.getName(),task.getGroup(),task.getTrigger(),task.getCron());
+    }
+
+    @RequestMapping(value = "/new2" ,method = RequestMethod.POST )
+    @ResponseBody
+    public ResultMsg createTask( @RequestBody Map<String,String> map){
+
+        return taskService.createTask(map.get("name"),map.get("group"),map.get("trigger"),map.get("cron"));
     }
 
     @RequestMapping(value = "/{taskId}/remove")
