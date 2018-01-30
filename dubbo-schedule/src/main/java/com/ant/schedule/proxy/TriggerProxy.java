@@ -6,6 +6,8 @@ import org.quartz.Job;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -15,6 +17,9 @@ import java.lang.reflect.Method;
  * @create 2018-01-02 21:46
  **/
 public class TriggerProxy implements Job {
+
+    Logger logger = LoggerFactory.getLogger(TriggerProxy.class);
+
     public static final String DATA_TARGET_KEY = "target" ;
     public static final String DATA_TRIGGER_KEY = "trigger" ;
     public static final String DATA_TRIGGER_PARAMS_KEY = "trigger_params" ;
@@ -25,8 +30,7 @@ public class TriggerProxy implements Job {
 
     private ThreadLocal<Entry> local = new ThreadLocal<Entry>();
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
-            local.set(new Entry());
-        System.out.println("execute1--------------------------");
+        local.set(new Entry());
         JobDataMap data = jobExecutionContext.getTrigger().getJobDataMap() ;
         Object target = data.get(DATA_TARGET_KEY);
         String methodName = (String)data.get(DATA_TRIGGER_KEY);
@@ -34,6 +38,7 @@ public class TriggerProxy implements Job {
         Class<?>[]  paramsClassType = (Class<?>[]) data.get(DATA_TRIGGER_PARAMS_CLASSTYPE);
         Object[]  params = (Object[]) data.get(DATA_TRIGGER_PARAMS_KEY);
         Task task = (Task) data.get(DATA_TASK_KEY) ;
+        logger.info("任务名称=["+task.getName()+"],任务编号=["+task.getId()+"]，第"+(task.getExecute()+1)+"次执行！！！");
         task.setExecute(task.getExecute() + 1);
         local.get().start = System.currentTimeMillis() ;
         try {
