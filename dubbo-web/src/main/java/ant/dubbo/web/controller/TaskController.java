@@ -33,8 +33,9 @@ public class TaskController {
      *  headers : 指定request请求中必须包含指定的header值，才处理
      * @return
      */
-    @RequestMapping(value = "/allTasks"  ,method = RequestMethod.POST )
+    @RequestMapping(value = "/allTasks"  ,method = RequestMethod.GET )
     @ResponseBody
+    @CrossOrigin
     public ResultMsg getALlTask() throws IOException {
         return  taskService.queryAllTask() ;
     }

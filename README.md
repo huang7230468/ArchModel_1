@@ -17,7 +17,24 @@
 ## 知识点
  - SpringMvc 中入参注解 @RequestParam是为了解决 consumes = "application/x-www-form-urlencoded"的情况，客户端发起请求必须是这种content-type
     其次 入参注解 @RequestBody是为了解决content-type为"application/json" 这种客户端请求
-
+    
+ - 跨域实验
+   方法上增加@CrossOrigin即可
+    - 第一组实验
+       接口中不指定  method 
+         客户端用 post  请求   403 
+         客户端用 get  请求   200 
+    - 第二组实验
+       接口中指定  method = post
+        客户端用 post  请求   200
+        客户端用 get  请求   405 Method Not Allowed
+    - 第三组实验
+       接口中指定  method = get
+        客户端用 post  请求   405 Method Not Allowed
+        客户端用 get  请求   200  
+`
+实验结论 ：针对第一组实验为什么只有get请求能成功，读源码得出的结论，因为内部实现，当没有指定method时，默认将get请求作为跨域允许的方法
+  `      
 
            
                 
