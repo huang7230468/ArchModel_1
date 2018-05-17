@@ -55,4 +55,10 @@
         </dependency>
     </dependencies>
 
+         <repositories>
+        <repository>
+            <id>rewin</id>
+            <url>http://192.168.25.25:8081/nexus/content/groups/rewin/</url>
+        </repository>
+    </repositories>
 </project>
